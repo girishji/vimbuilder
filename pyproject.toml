@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vimbuilder"
-version = "0.0.1"
+version = "0.0.5"
 authors = [
   { name="Girish Palya", email="girishji@gmail.com" },
 ]
-description = "Sphinx extension to generate documents in Vim help format"
+description = "Sphinx extension to generate Vim help files"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -16,6 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+keywords = ["sphinx", "sphinx-extention", "vim", "vim-help", "docs", "documentation", "builder"]
 
 [project.urls]
 "Homepage" = "https://github.com/girishji/vimbuilder"

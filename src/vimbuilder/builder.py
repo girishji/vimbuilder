@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from os import path
 from pathlib import Path
-from re import sub
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
-from docutils import nodes
+from docutils.nodes import table
 from docutils.utils import column_width
 
 from sphinx.addnodes import desc_signature
@@ -18,8 +18,7 @@ from sphinx.util import logging
 from sphinx.writers.text import TextTranslator, STDINDENT, MAXWIDTH
 
 if TYPE_CHECKING:
-    from docutils.nodes import Element
-    from docutils.nodes import Node
+    from docutils.nodes import Element, Node, document
     from sphinx.application import Sphinx
 
 logger = logging.getLogger(__name__)
@@ -27,15 +26,22 @@ logger = logging.getLogger(__name__)
 class VimHelpTranslator(TextTranslator):
     "Custom docutils/sphinx translator for vim help files"
 
-    def __init__(self, document: nodes.document, builder: TextBuilder) -> None:
+    def __init__(self, document: document, builder: TextBuilder) -> None:
         super().__init__(document, builder)
         self.tag_prefix = self.config.vimhelp_tag_prefix
         self.tag_suffix = self.config.vimhelp_tag_suffix
-        self.format_desc = self.config.vimhelp_format_desc
         self.tag_filename = self.config.vimhelp_tag_filename
         self.filename_suffix = self.config.vimhelp_filename_suffix
+        self.tags = set()
 
-    def add_text_nonl(self, text: str):
+    def is_inside_table(self, node: Element) -> bool:
+        while node.parent:
+            if isinstance(node.parent, table):
+                return True
+            node = node.parent
+        return False
+
+    def add_text_nonl(self, text: str | List):
         # Each 'state' item is a list of (indent, str | lines)
         if self.states[-1] and self.states[-1][-1]:
             ilevel, lines = self.states[-1][-1]
@@ -44,12 +50,14 @@ class VimHelpTranslator(TextTranslator):
             self.states[-1].append((-sum(self.stateindent), text))
 
     def visit_literal_block(self, node: Element) -> None:
-        self.add_text_nonl('>')
+        if not self.is_inside_table(node):
+            self.add_text_nonl('>')
         super().visit_literal_block(node)
 
     def depart_literal_block(self, node: Element) -> None:
         super().depart_literal_block(node)
-        self.add_text_nonl('<')
+        if not self.is_inside_table(node):
+            self.add_text_nonl('<')
 
     def visit_inline(self, node: Element) -> None:
         if 'xref' in node['classes'] or 'term' in node['classes']:
@@ -82,6 +90,7 @@ class VimHelpTranslator(TextTranslator):
 
     def visit_document(self, node: Element) -> None:
         super().visit_document(node)
+        # print(self.document.pformat())
         fpath = self.document['source']
         assert fpath
         fname = Path(fpath).name.replace(' ', '_').split('.')
@@ -98,22 +107,46 @@ class VimHelpTranslator(TextTranslator):
         footer = 'vim:tw=78:ts=8:ft=help:norl:'
         self.body += self.nl + footer
 
-    def extract_tag(self, text: str) -> str:
-        return re.sub(r'\(.*\)?', '()', text).replace(' ', '_')
-
-    def visit_desc(self, node: Element) -> None:
-        desc = node[node.first_child_matching_class(desc_signature)]
-        assert desc
-        if self.format_desc:
-            dtype = node['desctype'] if node.hasattr('desctype') else ''
-            formatted = self.format_desc(desc.astext(), dtype)
-        elif desc.hasattr('_toc_name'):
-            formatted = desc['_toc_name'].replace(' ', '_')
-        else:
-            formatted = self.extract_tag(desc.astext())
+    def get_tag(self, node: Element) -> str | None:
+        if self.is_inside_table(node):
+            return None
+        # If node is not intended to be in TOC then ignore it (ex.
+        # __init__(), command options, etc.)
+        if not node.hasattr('_toc_name') or not node['_toc_name']:
+            return None
+        if not node.parent and not node.parent.hasattr('desctype'):
+            return None
+        tag = node['_toc_name'].replace(' ', '_')
+        if tag in self.tags:
+            return None
+            # Include only one prototype of method signature
+            # if node.parent['desctype'] in ('function', 'method'):
+            #     return None
+        self.tags.add(tag)
         if self.tag_filename:
-            formatted += f'..{self.filename}'
-        self.add_text_nonl(['', ' ' * (MAXWIDTH - len(formatted) - 2) + self.get_vim_tag(formatted)])
+            tag += f'..{self.filename}'
+        return self.get_vim_tag(tag)
+
+    def tag_fits(self, node: Element, tag: str) -> bool:
+        return len(node.astext()) + len(tag) < MAXWIDTH - 2
+
+    def visit_desc_signature(self, node: Element) -> None:
+        self.cached_tag = None
+        tag = self.get_tag(node)
+        if tag and not self.tag_fits(node, tag):
+            self.add_text_nonl(['', ' ' * (MAXWIDTH - len(tag)) + tag])
+        else:
+            self.cached_tag = tag
+        super().visit_desc_signature(node)
+
+    def depart_desc_signature(self, node: Element) -> None:
+        super().depart_desc_signature(node)
+        tag = self.cached_tag
+        if tag and self.tag_fits(node, tag):
+            text = ' ' * (MAXWIDTH - len(node.astext()) - len(tag)) + tag
+            if type(self.states[-1]) is list and type(self.states[-1][-1][1]) is list:
+                self.states[-1][-1][1][-1] += text
+        self.cached_tag = None
 
 
 class VimHelpBuilder(TextBuilder):
@@ -125,17 +158,3 @@ class VimHelpBuilder(TextBuilder):
     allow_parallel = True
     default_translator_class = VimHelpTranslator
 
-def setup(app: Sphinx) -> dict[str, Any]:
-    app.add_builder(VimHelpBuilder)
-
-    app.add_config_value('vimhelp_tag_prefix', '', 'env')
-    app.add_config_value('vimhelp_tag_suffix', '', 'env')
-    app.add_config_value('vimhelp_format_desc', None, 'env')
-    app.add_config_value('vimhelp_tag_filename', True, 'env')
-    app.add_config_value('vimhelp_filename_suffix', ';', 'env')
-
-    return {
-        'version': 'builtin',
-        'parallel_read_safe': True,
-        'parallel_write_safe': True,
-    }
