@@ -1,7 +1,6 @@
 # vimbuilder
 
-Sphinx extension to add Vim help generation support. Create Vim help files for
-searching and browsing documentation inside Vim and Neovim.
+Sphinx extension to create Vim help files.
 
 ## Install
 
