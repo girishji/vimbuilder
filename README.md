@@ -31,10 +31,10 @@ You can add the following configurations to your `conf.py` file:
 
 Option|Default|Description
 ------|-------|-----------
-`vimhelp_tag_prefix`|`''`|String to prefix all tags. Useful in separating namespaces for each type of documentation.
+`vimhelp_tag_prefix`|`''`|String to prefix all tags. Useful for separating namespaces in case of multiple sources of documentation.
 `vimhelp_tag_suffix`|`''`|String to suffix all tags. See above.
-`vimhelp_tag_filename'|`True`|Whether to attach filename to all tags in the file.
-`vimhelp_filename_suffix'|';'|First tag in a help file is filename. Suffix will distinguish from Vim native help files.
+`vimhelp_tag_filename'|`True`|Whether to suffix filename to all tags in the file. Clarifies topic of help tag.
+`vimhelp_filename_suffix'|';'|First tag in a help file is filename. Suffixing the filename will avoid conflict with Vim native help files.
 
 ## Projects using Vimbuilder
 
