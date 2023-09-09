@@ -11,7 +11,6 @@ def setup(app: Sphinx) -> dict[str, Any]:
 
     app.add_config_value('vimhelp_tag_prefix', '', 'env')
     app.add_config_value('vimhelp_tag_suffix', '', 'env')
-    app.add_config_value('vimhelp_format_desc', None, 'env')
     app.add_config_value('vimhelp_tag_filename', True, 'env')
     app.add_config_value('vimhelp_filename_suffix', ';', 'env')
 
