@@ -31,6 +31,7 @@ class VimHelpTranslator(TextTranslator):
         self.tag_prefix = self.config.vimhelp_tag_prefix
         self.tag_suffix = self.config.vimhelp_tag_suffix
         self.tag_filename = self.config.vimhelp_tag_filename
+        self.tag_topic = self.config.vimhelp_tag_topic
         self.filename_suffix = self.config.vimhelp_filename_suffix
         self.tags = set()
 
@@ -91,13 +92,10 @@ class VimHelpTranslator(TextTranslator):
     def visit_document(self, node: Element) -> None:
         super().visit_document(node)
         # print(self.document.pformat())
-        fpath = self.document['source']
-        assert fpath
-        fname = Path(fpath).name.replace(' ', '_').split('.')
-        if len(fname) > 1:
-            fname.pop()
-        self.filename = ''.join(fname) + '.txt' + self.filename_suffix
-        tagname = self.get_vim_tag(self.filename)
+        fpath = self.document['source']; assert fpath
+        self.topic = Path(fpath).stem.replace(' ', '_')
+        self.filename = self.topic + '.txt'
+        tagname = self.get_vim_tag(self.filename + self.filename_suffix)
         timestamp = 'Last change: ' + datetime.today().strftime('%Y %b %d')
         spaces = ' ' * max(MAXWIDTH - len(tagname) - len(timestamp), 2)
         self.states[0].append((0, [tagname + spaces + timestamp, '']))
@@ -119,12 +117,11 @@ class VimHelpTranslator(TextTranslator):
         tag = node['_toc_name'].replace(' ', '_')
         if tag in self.tags:
             return None
-            # Include only one prototype of method signature
-            # if node.parent['desctype'] in ('function', 'method'):
-            #     return None
         self.tags.add(tag)
         if self.tag_filename:
             tag += f'..{self.filename}'
+        elif self.tag_topic:
+            tag += f'..{self.topic}'
         return self.get_vim_tag(tag)
 
     def tag_fits(self, node: Element, tag: str) -> bool:
