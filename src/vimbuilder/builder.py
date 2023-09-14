@@ -1,4 +1,12 @@
-"""Vim-help Sphinx builder."""
+"""
+Vim-help Sphinx builder.
+
+Specialize TextBuilder to add tags and code blocks appropriate for Vim help
+files. Hotlinks inside the file are not added since this would degrade
+readability (Vim does not conceal hotlink destinations, both hotlink and
+destination are one and the same). In addition, change italic/emphasis markers
+from '*' to '_' so as not to interfere with Vim's tags.
+"""
 
 from __future__ import annotations
 
