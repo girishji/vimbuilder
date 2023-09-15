@@ -37,8 +37,9 @@ Option|Default|Description
 `vimhelp_tag_prefix`|`''`|String to prefix all tags. Useful for separating namespaces in case of multiple sources of documentation.
 `vimhelp_tag_suffix`|`''`|String to suffix all tags. See above.
 `vimhelp_tag_filename'|`True`|Whether to suffix filename to all tags in the file. Clarifies topic of help tag.
-`vimhelp_tag_topic'|`False`|Same as above except suffix will not have '.txt' at the end.
-`vimhelp_filename_suffix'|`';'`|First tag in a help file is filename. Suffixing the filename will avoid conflict with Vim native help files.
+`vimhelp_tag_topic'|`False`|Same as above except without file extension.
+`vimhelp_filename_extension'|`'txt'`|Generated filenames will have this extension.
+`vimhelp_filename_suffix'|`''`|First tag in a help file is the filename itself. This option adds a suffix to just that tag.
 
 ## Projects using Vimbuilder
 

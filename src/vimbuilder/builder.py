@@ -41,8 +41,8 @@ class VimHelpTranslator(TextTranslator):
         self.tag_filename = self.config.vimhelp_tag_filename
         self.tag_topic = self.config.vimhelp_tag_topic
         self.filename_suffix = self.config.vimhelp_filename_suffix
+        self.filename_extension = self.config.vimhelp_filename_extension
         self.tags = set()
-
     def is_inside_table(self, node: Element) -> bool:
         while node.parent:
             if isinstance(node.parent, table):
@@ -102,7 +102,7 @@ class VimHelpTranslator(TextTranslator):
         # print(self.document.pformat())
         fpath = self.document['source']; assert fpath
         self.topic = Path(fpath).stem.replace(' ', '_')
-        self.filename = self.topic + '.txt'
+        self.filename = self.topic + '.' + self.filename_extension
         tagname = self.get_vim_tag(self.filename + self.filename_suffix)
         timestamp = 'Last change: ' + datetime.today().strftime('%Y %b %d')
         spaces = ' ' * max(MAXWIDTH - len(tagname) - len(timestamp), 2)
@@ -159,7 +159,9 @@ class VimHelpBuilder(TextBuilder):
     format = 'text'
     epilog = __('The vim help files are in %(outdir)s.')
 
-    out_suffix = '.txt'
     allow_parallel = True
     default_translator_class = VimHelpTranslator
 
+    def init(self) -> None:
+        self.out_suffix = '.' + self.config.vimhelp_filename_extension
+        super().init()
